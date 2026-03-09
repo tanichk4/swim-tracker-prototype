@@ -1,9 +1,9 @@
 <!-- PROTOTYPE: Interactive Swimming Workout & Calorie/Macro Tracker with BMI
      Open this file in any browser to try it out.
      Key things to test:
-     1. Enter height/weight/age/sex → BMI form collapses into compact strip under header
-     2. Click "Edit" on the strip to re-expand the form
-     3. Log swims — calorie burn uses your actual weight + BMI correction -->
+     1. Screen 1 — Enter height/weight/age/sex → Continue button unlocks when all filled
+     2. Inline warnings appear for age-based or BMI sanity issues (non-blocking)
+     3. Screen 2 — Full tracker; Edit button on profile strip returns to Screen 1 -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -22,6 +22,9 @@
     --coral: #f0856e;
     --sand: #f5e6cc;
     --white: #f0f4f8;
+    --warn: #f0c060;
+    --rose: #f48fae;
+    --sky:  #5dade2;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -34,30 +37,171 @@
     overflow-x: hidden;
   }
 
-  /* === WATER BG === */
-  .water-bg {
-    position: fixed; bottom: 0; left: 0; right: 0;
-    height: 0%;
-    background: linear-gradient(180deg, rgba(26,82,118,0.3) 0%, rgba(15,41,66,0.6) 100%);
-    transition: height 1.5s cubic-bezier(0.22, 1, 0.36, 1);
-    z-index: 0; pointer-events: none;
+/* === SCREEN SYSTEM === */
+  .screen { display: none; }
+
+  /* === SCREEN 1: ONBOARDING === */
+  #screenOnboarding {
+    position: fixed; inset: 0; z-index: 10;
+    display: none; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    overflow-y: auto;
   }
-  .water-bg::before, .water-bg::after {
-    content: ''; position: absolute; top: -20px; left: -50%;
-    width: 200%; height: 40px; border-radius: 45%; opacity: 0.4;
-  }
-  .water-bg::before { background: var(--wave); animation: wave 8s linear infinite; }
-  .water-bg::after { background: var(--foam); opacity: 0.15; animation: wave 6s linear infinite reverse; top: -15px; }
-  @keyframes wave {
-    0% { transform: translateX(0) rotate(0deg); }
-    100% { transform: translateX(-50%) rotate(360deg); }
+  #screenOnboarding.active { display: flex; }
+
+  .onboarding-card {
+    position: relative; z-index: 1;
+    width: 100%; max-width: 400px;
+    background: rgba(15,41,66,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 36px 32px 32px;
+    animation: screenIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  /* === LAYOUT === */
-  .app {
-    position: relative; z-index: 1;
-    max-width: 520px; margin: 0 auto; padding: 24px 16px 100px;
+  .onboarding-logo {
+    text-align: center; margin-bottom: 28px;
   }
+  .onboarding-logo h1 {
+    font-family: 'Playfair Display', serif; font-weight: 900; font-size: 2.4rem;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--foam), var(--glow), var(--sand));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .onboarding-logo p {
+    color: var(--glow); font-size: 0.8rem; margin-top: 4px;
+    font-weight: 300; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  .onboarding-why {
+    text-align: center;
+    margin: -10px 0 24px;
+    font-size: 0.83rem;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  .onboarding-heading {
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 2px; color: rgba(255,255,255,0.35);
+    margin-bottom: 20px;
+  }
+
+  /* === SHARED FORM ELEMENTS === */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+  .form-group label {
+    font-size: 0.72rem; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .form-group input, .form-group select {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 10px 12px; color: var(--white);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; transition: border-color 0.3s; width: 100%;
+  }
+  .form-group input:focus, .form-group select:focus { border-color: var(--foam); }
+  .form-group select option { background: var(--ocean); }
+
+  /* === ONBOARDING FIELD LAYOUT === */
+  .onboarding-fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+  .onboarding-field { display: flex; flex-direction: column; gap: 4px; }
+  .onboarding-field label {
+    font-size: 0.72rem; color: rgba(255,255,255,0.35);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .onboarding-field input {
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px; padding: 12px 14px; color: var(--white);
+    font-family: 'DM Sans', sans-serif; font-size: 1rem;
+    outline: none; transition: border-color 0.3s, background 0.3s;
+    width: 100%;
+  }
+  .onboarding-field input:focus { border-color: var(--foam); background: rgba(72,201,176,0.06); }
+  .onboarding-field input.input-error {
+    border-color: var(--coral) !important;
+    background: rgba(240,133,110,0.08) !important;
+  }
+
+  /* === SEX SEGMENTED TOGGLE === */
+  .sex-toggle {
+    display: flex; border-radius: 12px; overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+  }
+  .sex-toggle button {
+    flex: 1; padding: 11px 10px; border: none; background: transparent;
+    color: rgba(255,255,255,0.4); font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 500; cursor: pointer;
+    transition: background 0.2s, color 0.2s; letter-spacing: 0.3px;
+  }
+  .sex-toggle button + button {
+    border-left: 1px solid rgba(255,255,255,0.08);
+  }
+  .sex-toggle button[data-val="female"].selected {
+    background: rgba(244,143,174,0.18); color: var(--rose);
+  }
+  .sex-toggle button[data-val="male"].selected {
+    background: rgba(93,173,226,0.18); color: var(--sky);
+  }
+  .sex-toggle button:not(.selected):hover {
+    background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7);
+  }
+
+  /* === INLINE FIELD WARNING / ERROR === */
+  .field-warn, .field-error {
+    font-size: 0.72rem; line-height: 1.4;
+    max-height: 0; overflow: hidden; opacity: 0;
+    transition: opacity 0.2s ease, max-height 0.35s ease 0.15s;
+  }
+  .field-warn { color: var(--warn); }
+  .field-error { color: var(--coral); }
+  .field-warn.visible, .field-error.visible {
+    max-height: 60px; opacity: 1;
+    transition: max-height 0.3s ease, opacity 0.25s ease 0.1s;
+  }
+
+  /* === BUTTONS === */
+  .btn-continue {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    font-weight: 700; letter-spacing: 0.5px; cursor: pointer;
+    background: linear-gradient(135deg, var(--foam), var(--wave)); color: var(--deep);
+    transition: transform 0.15s, box-shadow 0.3s, opacity 0.2s;
+    margin-top: 4px;
+  }
+  .btn-continue:not(.btn-continue--locked):hover {
+    transform: translateY(-1px); box-shadow: 0 6px 24px rgba(72,201,176,0.3);
+  }
+  .btn-continue:not(.btn-continue--locked):active { transform: scale(0.98); }
+  .btn-continue--locked {
+    opacity: 0.38; cursor: not-allowed;
+    background: linear-gradient(135deg, rgba(72,201,176,0.5), rgba(26,82,118,0.5));
+  }
+  .btn-continue--locked:hover { transform: none !important; box-shadow: none !important; }
+
+  .btn-log {
+    width: 100%; padding: 14px; border: none; border-radius: 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    font-weight: 700; letter-spacing: 0.5px; cursor: pointer;
+    background: linear-gradient(135deg, var(--foam), var(--wave)); color: var(--deep);
+    transition: transform 0.15s, box-shadow 0.3s; margin-top: 6px;
+  }
+  .btn-log:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(72,201,176,0.25); }
+  .btn-log:active { transform: scale(0.98); }
+
+  /* === SCREEN 2: TRACKER === */
+  #screenTracker {
+    position: relative; z-index: 1;
+    max-width: 520px; margin: 0 auto;
+    padding: 24px 16px 100px;
+    animation: screenIn 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  #screenTracker.active { display: block; }
 
   header { text-align: center; margin-bottom: 8px; }
   header h1 {
@@ -71,9 +215,9 @@
     font-weight: 300; letter-spacing: 2px; text-transform: uppercase;
   }
 
-  /* === COLLAPSED PROFILE STRIP === */
+  /* === PROFILE STRIP === */
   .profile-strip {
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     gap: 14px;
@@ -85,7 +229,6 @@
     border-radius: 40px;
     animation: slideIn 0.4s ease;
   }
-  .profile-strip.visible { display: flex; }
   .profile-strip .chip {
     display: flex; align-items: center; gap: 5px;
     font-size: 0.78rem; color: rgba(255,255,255,0.55);
@@ -114,58 +257,7 @@
     font-family: 'DM Sans', sans-serif; letter-spacing: 0.5px;
     transition: border-color 0.2s, color 0.2s;
   }
-  .profile-strip .edit-btn:hover {
-    border-color: var(--foam); color: var(--foam);
-  }
-
-  /* === BMI FORM CARD (collapsible) === */
-  .bmi-card {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
-    border-radius: 18px; padding: 20px; margin-bottom: 24px;
-    overflow: hidden;
-    max-height: 500px;
-    transition: max-height 0.5s cubic-bezier(0.22, 1, 0.36, 1),
-                opacity 0.3s ease, margin-bottom 0.4s ease, padding 0.4s ease;
-  }
-  .bmi-card.collapsed {
-    max-height: 0; opacity: 0; padding: 0 20px;
-    margin-bottom: 0; border-color: transparent;
-    pointer-events: none;
-  }
-  .bmi-card h2 {
-    font-size: 0.75rem; text-transform: uppercase;
-    letter-spacing: 2px; color: rgba(255,255,255,0.4); margin-bottom: 16px;
-  }
-
-  /* === SHARED FORM === */
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
-  .form-row.three { grid-template-columns: 1fr 1fr 1fr; }
-  .form-group { display: flex; flex-direction: column; gap: 4px; }
-  .form-group label {
-    font-size: 0.72rem; color: rgba(255,255,255,0.35);
-    text-transform: uppercase; letter-spacing: 1px;
-  }
-  .form-group input, .form-group select {
-    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-    border-radius: 10px; padding: 10px 12px; color: var(--white);
-    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-    outline: none; transition: border-color 0.3s;
-  }
-  .form-group input:focus, .form-group select:focus { border-color: var(--foam); }
-  .form-group select option { background: var(--ocean); }
-
-  .btn-log, .btn-bmi {
-    width: 100%; padding: 14px; border: none; border-radius: 12px;
-    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
-    font-weight: 700; letter-spacing: 0.5px; cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.3s; margin-top: 6px;
-  }
-  .btn-log { background: linear-gradient(135deg, var(--foam), var(--wave)); color: var(--deep); }
-  .btn-bmi { background: linear-gradient(135deg, var(--sand), var(--coral)); color: var(--deep); }
-  .btn-log:hover, .btn-bmi:hover {
-    transform: translateY(-1px); box-shadow: 0 6px 24px rgba(72,201,176,0.25);
-  }
-  .btn-log:active, .btn-bmi:active { transform: scale(0.98); }
+  .profile-strip .edit-btn:hover { border-color: var(--foam); color: var(--foam); }
 
   /* === GOAL RING === */
   .goal-ring { display: flex; justify-content: center; margin-bottom: 28px; }
@@ -213,11 +305,6 @@
   .protein-alert .icon { font-size: 1.3rem; }
   .protein-alert .text { font-size: 0.82rem; color: var(--coral); line-height: 1.4; }
   .protein-alert .text strong { color: var(--sand); }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
 
   /* === LOG FORM === */
   .form-card {
@@ -267,7 +354,7 @@
     font-size: 0.8rem; transition: transform 0.3s ease;
     display: inline-block;
   }
-  .toggle-btn .arrow.collapsed { transform: rotate(-90deg); }
+  .toggle-btn .arrow.collapsed { transform: rotate(90deg); }
 
   .session-list {
     overflow: hidden;
@@ -293,17 +380,11 @@
     transition: color 0.2s; line-height: 1;
   }
   .session .del-btn:hover { color: var(--coral); }
-
-  .session.removing {
-    animation: removeSlide 0.35s ease forwards;
-  }
-  @keyframes removeSlide {
-    to { transform: translateX(60px); opacity: 0; max-height: 0; margin-bottom: 0; padding: 0 16px; }
-  }
+  .session.removing { animation: removeSlide 0.35s ease forwards; }
 
   .empty-state {
     text-align: center; padding: 24px;
-    color: rgba(255,255,255,0.2); font-style: italic; font-size: 0.85rem;
+    color: rgba(255,255,255,0.5); font-style: italic; font-size: 0.85rem;
   }
 
   /* === CONFIRM DIALOG === */
@@ -318,9 +399,7 @@
     border-radius: 18px; padding: 28px 24px; text-align: center;
     max-width: 320px; width: 90%; animation: slideIn 0.3s ease;
   }
-  .confirm-box p {
-    font-size: 0.95rem; color: var(--white); margin-bottom: 20px; line-height: 1.5;
-  }
+  .confirm-box p { font-size: 0.95rem; color: var(--white); margin-bottom: 20px; line-height: 1.5; }
   .confirm-box .confirm-actions { display: flex; gap: 10px; }
   .confirm-box .confirm-actions button {
     flex: 1; padding: 12px; border: none; border-radius: 10px;
@@ -328,18 +407,14 @@
     font-weight: 700; cursor: pointer; transition: transform 0.15s;
   }
   .confirm-box .confirm-actions button:active { transform: scale(0.96); }
-  .confirm-box .btn-cancel {
-    background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6);
-  }
-  .confirm-box .btn-confirm-del {
-    background: linear-gradient(135deg, var(--coral), #e74c3c); color: white;
-  }
+  .confirm-box .btn-cancel { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+  .confirm-box .btn-confirm-del { background: linear-gradient(135deg, var(--coral), #e74c3c); color: white; }
 
   /* === ERROR TOAST === */
   .error-toast {
     position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
     z-index: 200; max-width: 420px; width: 90%;
-    background: rgba(231, 76, 60, 0.92); backdrop-filter: blur(10px);
+    background: rgba(231,76,60,0.92); backdrop-filter: blur(10px);
     border: 1px solid rgba(255,255,255,0.12);
     border-radius: 14px; padding: 12px 18px;
     display: flex; align-items: flex-start; gap: 10px;
@@ -347,25 +422,14 @@
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
   .error-toast .toast-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
-  .error-toast .toast-msg {
-    font-size: 0.82rem; color: white; line-height: 1.45;
-  }
+  .error-toast .toast-msg { font-size: 0.82rem; color: white; line-height: 1.45; }
   .error-toast .toast-msg strong { color: var(--sand); }
   .error-toast .toast-close {
     background: none; border: none; color: rgba(255,255,255,0.5);
     font-size: 1rem; cursor: pointer; padding: 0 0 0 8px;
-    flex-shrink: 0; line-height: 1;
+    flex-shrink: 0; line-height: 1; margin-left: auto;
   }
   .error-toast .toast-close:hover { color: white; }
-
-  @keyframes toastIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(16px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
-  }
-  @keyframes toastOut {
-    from { opacity: 1; transform: translateX(-50%) translateY(0); }
-    to { opacity: 0; transform: translateX(-50%) translateY(16px); }
-  }
 
   /* === INPUT ERROR HIGHLIGHT === */
   .form-group input.input-error,
@@ -374,6 +438,53 @@
     background: rgba(240,133,110,0.08);
   }
 
+  /* === SELECT WRAPPER === */
+  .select-wrap { position: relative; }
+  .select-wrap select { -webkit-appearance: none; appearance: none; padding-right: 28px; }
+  .select-wrap::after {
+    content: '▾';
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    color: rgba(255,255,255,0.25); font-size: 0.75rem; pointer-events: none;
+    transition: color 0.15s;
+  }
+  .select-wrap:focus-within::after { color: var(--foam); }
+
+  /* === NUMBER INPUT STEPPERS === */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .num-input-wrap { position: relative; }
+  .num-steppers {
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .num-steppers button {
+    background: none; border: none; cursor: pointer; padding: 1px 5px;
+    color: rgba(255,255,255,0.25); font-size: 0.6rem; line-height: 1;
+    transition: color 0.15s;
+  }
+  .num-steppers button:hover { color: var(--foam); }
+
+  /* === ANIMATIONS === */
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes screenIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes removeSlide {
+    to { transform: translateX(60px); opacity: 0; max-height: 0; margin-bottom: 0; padding: 0 16px; }
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0); }
+    to   { opacity: 0; transform: translateX(-50%) translateY(16px); }
+  }
   @keyframes shake {
     0%, 100% { transform: translateX(0); }
     20% { transform: translateX(-6px); }
@@ -384,15 +495,95 @@
 </style>
 </head>
 <body>
-  <div class="water-bg" id="waterBg"></div>
+  <!-- ============ SCREEN 1: ONBOARDING ============ -->
+  <div id="screenOnboarding" class="screen active">
+    <div class="onboarding-card">
 
-  <div class="app">
+      <div class="onboarding-logo">
+        <h1>SwimPulse</h1>
+        <p>Track · Burn · Recover</p>
+      </div>
+
+      <div class="onboarding-why">
+        <p>Your height, weight, and age let us calculate accurate calorie burn for every swim — no guesswork.</p>
+      </div>
+
+      <div class="onboarding-heading">Your Body Profile</div>
+
+      <div class="onboarding-fields">
+
+        <div class="onboarding-field">
+          <label for="height">Height (cm)</label>
+          <div class="num-input-wrap">
+            <input type="number" id="height" placeholder="e.g. 170" min="50" max="250" step="1"
+                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-height',''); setWarn('warn-bmi',''); checkContinueEnabled()"
+                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
+            <div class="num-steppers">
+              <button type="button" tabindex="-1" onclick="stepInput('height', 1)">▲</button>
+              <button type="button" tabindex="-1" onclick="stepInput('height', -1)">▼</button>
+            </div>
+          </div>
+          <div class="field-error" id="err-height"></div>
+          <div class="field-warn"  id="warn-height"></div>
+        </div>
+
+        <div class="onboarding-field">
+          <label for="weight">Weight (kg)</label>
+          <div class="num-input-wrap">
+            <input type="number" id="weight" placeholder="e.g. 65" min="10" max="300" step="0.5"
+                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-weight',''); setWarn('warn-bmi',''); checkContinueEnabled()"
+                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
+            <div class="num-steppers">
+              <button type="button" tabindex="-1" onclick="stepInput('weight', 1)">▲</button>
+              <button type="button" tabindex="-1" onclick="stepInput('weight', -1)">▼</button>
+            </div>
+          </div>
+          <div class="field-error" id="err-weight"></div>
+          <div class="field-warn"  id="warn-weight"></div>
+        </div>
+
+        <div class="onboarding-field">
+          <label for="age">Age</label>
+          <div class="num-input-wrap">
+            <input type="number" id="age" placeholder="e.g. 28" min="1" max="120" step="1"
+                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-age',''); checkContinueEnabled()"
+                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
+            <div class="num-steppers">
+              <button type="button" tabindex="-1" onclick="stepInput('age', 1)">▲</button>
+              <button type="button" tabindex="-1" onclick="stepInput('age', -1)">▼</button>
+            </div>
+          </div>
+          <div class="field-error" id="err-age"></div>
+          <div class="field-warn"  id="warn-age"></div>
+        </div>
+
+        <div class="onboarding-field">
+          <label>Sex</label>
+          <div class="sex-toggle">
+            <button data-val="male" class="selected" onclick="selectSex('male')">Male</button>
+            <button data-val="female"               onclick="selectSex('female')">Female</button>
+          </div>
+          <div class="field-warn" id="warn-bmi"></div>
+        </div>
+
+      </div>
+
+      <button class="btn-continue btn-continue--locked" id="btnContinue" onclick="submitProfile()">
+        Continue →
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ============ SCREEN 2: TRACKER ============ -->
+  <div id="screenTracker" class="screen">
+
     <header>
       <h1>SwimPulse</h1>
       <p>Track · Burn · Recover</p>
     </header>
 
-    <!-- Collapsed profile strip (shown after BMI calculated) -->
+    <!-- Profile strip -->
     <div class="profile-strip" id="profileStrip">
       <div class="chip"><span class="chip-val" id="stripWeight">—</span> kg</div>
       <div class="divider"></div>
@@ -402,38 +593,7 @@
         <span class="bmi-num" id="stripBmiVal">—</span>
         <span class="bmi-cat" id="stripBmiCat">—</span>
       </div>
-      <button class="edit-btn" onclick="expandProfile()">Edit</button>
-    </div>
-
-    <!-- BMI Form (full, collapsible) -->
-    <div class="bmi-card" id="bmiCard">
-      <h2>Your Body Profile</h2>
-      <div class="form-row three">
-        <div class="form-group">
-          <label>Height (cm)</label>
-          <input type="number" id="height" placeholder="170" min="100" max="250" step="1">
-        </div>
-        <div class="form-group">
-          <label>Weight (kg)</label>
-          <input type="number" id="weight" placeholder="65" min="30" max="300" step="0.5">
-        </div>
-        <div class="form-group">
-          <label>Age</label>
-          <input type="number" id="age" placeholder="28" min="10" max="100" step="1">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Sex</label>
-          <select id="sex">
-            <option value="female">Female</option>
-            <option value="male">Male</option>
-          </select>
-        </div>
-        <div class="form-group" style="justify-content: flex-end;">
-          <button class="btn-bmi" onclick="calcBMI()">Calculate BMI</button>
-        </div>
-      </div>
+      <button class="edit-btn" onclick="goToOnboarding()">Edit</button>
     </div>
 
     <!-- Goal Ring -->
@@ -490,31 +650,47 @@
       <div class="form-row">
         <div class="form-group">
           <label>Distance (m)</label>
-          <input type="number" id="distance" placeholder="e.g. 1500" min="0" step="50">
+          <div class="num-input-wrap">
+            <input type="number" id="distance" placeholder="e.g. 1500" min="0" step="50">
+            <div class="num-steppers">
+              <button type="button" tabindex="-1" onclick="stepInput('distance', 1)">▲</button>
+              <button type="button" tabindex="-1" onclick="stepInput('distance', -1)">▼</button>
+            </div>
+          </div>
         </div>
         <div class="form-group">
           <label>Duration (min)</label>
-          <input type="number" id="duration" placeholder="e.g. 45" min="0" step="1">
+          <div class="num-input-wrap">
+            <input type="number" id="duration" placeholder="e.g. 45" min="0" step="1">
+            <div class="num-steppers">
+              <button type="button" tabindex="-1" onclick="stepInput('duration', 1)">▲</button>
+              <button type="button" tabindex="-1" onclick="stepInput('duration', -1)">▼</button>
+            </div>
+          </div>
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label>Stroke</label>
-          <select id="stroke">
-            <option value="freestyle">Freestyle</option>
-            <option value="breaststroke">Breaststroke</option>
-            <option value="backstroke">Backstroke</option>
-            <option value="butterfly">Butterfly</option>
-            <option value="mixed">Mixed</option>
-          </select>
+          <div class="select-wrap">
+            <select id="stroke">
+              <option value="freestyle">Freestyle</option>
+              <option value="breaststroke">Breaststroke</option>
+              <option value="backstroke">Backstroke</option>
+              <option value="butterfly">Butterfly</option>
+              <option value="mixed">Mixed</option>
+            </select>
+          </div>
         </div>
         <div class="form-group">
           <label>Intensity</label>
-          <select id="intensity">
-            <option value="easy">Easy</option>
-            <option value="moderate" selected>Moderate</option>
-            <option value="hard">Hard</option>
-          </select>
+          <div class="select-wrap">
+            <select id="intensity">
+              <option value="easy">Easy</option>
+              <option value="moderate" selected>Moderate</option>
+              <option value="hard">Hard</option>
+            </select>
+          </div>
         </div>
       </div>
       <button class="btn-log" onclick="logSession()">Log Swim 🏊‍♀️</button>
@@ -527,11 +703,11 @@
         <div class="history-actions">
           <button class="clear-btn" id="clearBtn" onclick="clearAll()" title="Clear all">Clear all</button>
           <button class="toggle-btn" id="toggleBtn" onclick="toggleHistory()">
-            <span class="arrow" id="toggleArrow">▾</span>
+            <span class="arrow collapsed" id="toggleArrow">▾</span>
           </button>
         </div>
       </div>
-      <div class="session-list" id="sessionList">
+      <div class="session-list collapsed" id="sessionList">
         <div class="empty-state">No sessions yet — go make some waves!</div>
       </div>
     </div>
@@ -546,7 +722,8 @@
         </div>
       </div>
     </div>
-  </div>
+
+  </div><!-- /screenTracker -->
 
 <script>
   const MET = {
@@ -558,18 +735,223 @@
   };
 
   const DAILY_GOAL_KCAL = 500;
-  let profile = { weight: 65, height: 170, age: 28, sex: 'female', bmi: null, correctionFactor: 1.0 };
+  let profile = { weight: null, height: null, age: null, sex: 'male', bmi: null, correctionFactor: 1.0 };
   let sessions = [];
+  let selectedSex = 'male';
+
+  // === SEX TOGGLE ===
+  function selectSex(val) {
+    selectedSex = val;
+    document.querySelectorAll('.sex-toggle button').forEach(b =>
+      b.classList.toggle('selected', b.dataset.val === val));
+  }
+
+  // === LIVE VALIDATION: enable/disable Continue + show warnings ===
+  function checkContinueEnabled() {
+    const h = parseFloat(document.getElementById('height').value);
+    const w = parseFloat(document.getElementById('weight').value);
+    const a = parseFloat(document.getElementById('age').value);
+    const allFilled = !isNaN(h) && h > 0 && !isNaN(w) && w > 0 && !isNaN(a) && a > 0;
+    document.getElementById('btnContinue').classList.toggle('btn-continue--locked', !allFilled);
+  }
+
+  function checkWarnings() {
+    const h = parseFloat(document.getElementById('height').value);
+    const w = parseFloat(document.getElementById('weight').value);
+    const a = parseFloat(document.getElementById('age').value);
+
+    let warnH = '', warnW = '', warnA = '', warnBMI = '';
+
+    // Age-based height limits
+    if (!isNaN(a) && !isNaN(h) && h > 0) {
+      if      (a < 7  && h > 130) warnH = `Height above 130 cm is unusual for age ${a}`;
+      else if (a < 10 && h > 155) warnH = `Height above 155 cm is unusual for age ${a}`;
+      else if (a < 14 && h > 180) warnH = `Height above 180 cm is unusual for age ${a}`;
+    }
+
+    // Age-based weight limits
+    if (!isNaN(a) && !isNaN(w) && w > 0) {
+      if      (a < 7  && w > 35) warnW = `Weight above 35 kg is unusual for age ${a}`;
+      else if (a < 10 && w > 50) warnW = `Weight above 50 kg is unusual for age ${a}`;
+      else if (a < 14 && w > 70) warnW = `Weight above 70 kg is unusual for age ${a}`;
+    }
+
+    // Age range sanity
+    if (!isNaN(a) && (a < 3 || a > 120)) {
+      warnA = `Age ${a} seems outside a normal range`;
+    }
+
+    // BMI sanity — shown under Sex field
+    if (!isNaN(h) && !isNaN(w) && h > 0 && w > 0) {
+      const bmi = w / ((h / 100) ** 2);
+      if      (bmi < 12) warnBMI = `BMI of ${bmi.toFixed(1)} seems very low — double-check values`;
+      else if (bmi > 60) warnBMI = `BMI of ${bmi.toFixed(1)} seems very high — double-check values`;
+    }
+
+    setWarn('warn-height', warnH);
+    setWarn('warn-weight', warnW);
+    setWarn('warn-age',    warnA);
+    setWarn('warn-bmi',    warnBMI);
+  }
+
+  function setWarn(id, msg) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = msg ? '⚠ ' + msg : '';
+    el.classList.toggle('visible', !!msg);
+  }
+
+  function stepInput(id, delta) {
+    const el = document.getElementById(id);
+    const step = parseFloat(el.step) || 1;
+    const current = parseFloat(el.value) || 0;
+    el.value = Math.max(parseFloat(el.min) || 0, current + delta * step);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function setFieldError(id, msg) {
+    const el = document.getElementById('err-' + id);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle('visible', !!msg);
+  }
+
+  // === SUBMIT PROFILE (Screen 1 → Screen 2) ===
+  function submitProfile() {
+    if (document.getElementById('btnContinue').classList.contains('btn-continue--locked')) {
+      const btn = document.getElementById('btnContinue');
+      btn.style.animation = 'none'; btn.offsetHeight;
+      btn.style.animation = 'shake 0.4s ease';
+      const LABELS = { height: 'Height is required', weight: 'Weight is required', age: 'Age is required' };
+      ['height', 'weight', 'age'].forEach(id => {
+        const el = document.getElementById(id);
+        const val = parseFloat(el.value);
+        if (!el.value || isNaN(val) || val <= 0) {
+          el.classList.add('input-error');
+          setFieldError(id, LABELS[id]);
+        }
+      });
+      setTimeout(() => {
+        ['height', 'weight', 'age'].forEach(id => {
+          document.getElementById(id).classList.remove('input-error');
+          setFieldError(id, '');
+        });
+      }, 2000);
+      return;
+    }
+
+    const hRaw = document.getElementById('height').value;
+    const wRaw = document.getElementById('weight').value;
+    const aRaw = document.getElementById('age').value;
+    const h = parseFloat(hRaw);
+    const w = parseFloat(wRaw);
+    const a = parseInt(aRaw);
+
+    // Hard validation — absolute limits only
+    let errors = [], badFields = [];
+
+    if (!hRaw || isNaN(h)) {
+      setFieldError('height', 'Height is required');
+      errors.push('Please enter your height'); badFields.push('height');
+    } else if (h < 50 || h > 250) {
+      setFieldError('height', 'Must be 50–250 cm');
+      errors.push(`<strong>${h} cm</strong> doesn't look right — expected 50–250 cm`);
+      badFields.push('height');
+    }
+
+    if (!wRaw || isNaN(w)) {
+      setFieldError('weight', 'Weight is required');
+      errors.push('Please enter your weight'); badFields.push('weight');
+    } else if (w < 10 || w > 300) {
+      setFieldError('weight', 'Must be 10–300 kg');
+      errors.push(`<strong>${w} kg</strong> doesn't look right — expected 10–300 kg`);
+      badFields.push('weight');
+    }
+
+    if (!aRaw || isNaN(a)) {
+      setFieldError('age', 'Age is required');
+      errors.push('Please enter your age'); badFields.push('age');
+    } else if (a < 1 || a > 120) {
+      setFieldError('age', 'Must be 1–120');
+      errors.push(`<strong>${a} years</strong> doesn't seem right — expected 1–120`);
+      badFields.push('age');
+    }
+
+    if (errors.length > 0) {
+      showError(errors.join('<br>'), badFields);
+      const btn = document.getElementById('btnContinue');
+      btn.style.animation = 'none'; btn.offsetHeight;
+      btn.style.animation = 'shake 0.4s ease';
+      return;
+    }
+
+    profile.weight = w;
+    profile.height = h;
+    profile.age    = a;
+    profile.sex    = selectedSex;
+
+    const bmi = w / ((h / 100) ** 2);
+    profile.bmi = bmi;
+
+    let category, color, factor;
+    if      (bmi < 18.5) { category = 'Underweight'; color = '#5dade2'; factor = 0.85; }
+    else if (bmi < 25)   { category = 'Normal';      color = '#48c9b0'; factor = 1.0;  }
+    else if (bmi < 30)   { category = 'Overweight';  color = '#f0856e'; factor = 1.12; }
+    else                 { category = 'Obese';        color = '#e74c3c'; factor = 1.25; }
+    profile.correctionFactor = factor;
+
+    // Populate profile strip
+    document.getElementById('stripWeight').textContent = w;
+    document.getElementById('stripHeight').textContent = h;
+    document.getElementById('stripBmiVal').textContent = bmi.toFixed(1);
+    document.getElementById('stripBmiVal').style.color = color;
+    const catEl = document.getElementById('stripBmiCat');
+    catEl.textContent = category;
+    catEl.style.background = color + '22';
+    catEl.style.color = color;
+
+    // Recalc any existing sessions
+    sessions.forEach(s => { s.kcal = calcCalories(s.stroke, s.intensity, s.duration); });
+
+    goToTracker();
+    updateUI();
+  }
+
+  // === SCREEN NAVIGATION ===
+  function goToTracker() {
+    document.getElementById('screenOnboarding').classList.remove('active');
+    const tracker = document.getElementById('screenTracker');
+    tracker.classList.add('active');
+    // Re-trigger animation
+    tracker.style.animation = 'none';
+    tracker.offsetHeight;
+    tracker.style.animation = '';
+  }
+
+  function goToOnboarding() {
+    // Pre-fill fields with current profile values
+    if (profile.height) document.getElementById('height').value = profile.height;
+    if (profile.weight) document.getElementById('weight').value = profile.weight;
+    if (profile.age)    document.getElementById('age').value    = profile.age;
+    selectSex(profile.sex || 'female');
+    checkWarnings();
+    checkContinueEnabled();
+
+    document.getElementById('screenTracker').classList.remove('active');
+    const onb = document.getElementById('screenOnboarding');
+    onb.classList.add('active');
+    onb.style.animation = 'none';
+    onb.offsetHeight;
+    onb.style.animation = '';
+    setTimeout(() => document.getElementById('height').focus(), 300);
+  }
 
   // === ERROR TOAST ===
   let toastTimer = null;
   function showError(msg, fieldIds) {
-    // Remove existing toast
     document.querySelectorAll('.error-toast').forEach(el => el.remove());
-    // Clear previous highlights
     document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
 
-    // Highlight bad fields
     if (fieldIds) {
       fieldIds.forEach(id => {
         const el = document.getElementById(id);
@@ -577,7 +959,6 @@
       });
     }
 
-    // Create toast
     const toast = document.createElement('div');
     toast.className = 'error-toast';
     toast.innerHTML = `
@@ -587,112 +968,12 @@
     `;
     document.body.appendChild(toast);
 
-    // Auto remove
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => {
       toast.remove();
       document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      ['height', 'weight', 'age'].forEach(id => setFieldError(id, ''));
     }, 3600);
-  }
-
-  // === BMI CALC & COLLAPSE ===
-  function calcBMI() {
-    const hRaw = document.getElementById('height').value;
-    const wRaw = document.getElementById('weight').value;
-    const aRaw = document.getElementById('age').value;
-    const s = document.getElementById('sex').value;
-
-    const h = parseFloat(hRaw);
-    const w = parseFloat(wRaw);
-    const a = parseInt(aRaw);
-
-    // Collect all errors
-    let errors = [];
-    let badFields = [];
-
-    // Height
-    if (!hRaw || isNaN(h)) {
-      errors.push('Please enter your height'); badFields.push('height');
-    } else if (h < 80 || h > 250) {
-      errors.push(`<strong>${h} cm</strong> doesn't look right for height — expected 80–250 cm`);
-      badFields.push('height');
-    }
-
-    // Weight
-    if (!wRaw || isNaN(w)) {
-      errors.push('Please enter your weight'); badFields.push('weight');
-    } else if (w < 20 || w > 300) {
-      errors.push(`<strong>${w} kg</strong> doesn't look right for weight — expected 20–300 kg`);
-      badFields.push('weight');
-    }
-
-    // Age (optional but validate if entered)
-    if (aRaw && !isNaN(a)) {
-      if (a < 5 || a > 120) {
-        errors.push(`<strong>${a} years</strong> doesn't seem right for age — expected 5–120`);
-        badFields.push('age');
-      }
-    }
-
-    // Cross-check: BMI sanity (only if both h and w are in range)
-    if (errors.length === 0) {
-      const testBmi = w / ((h / 100) ** 2);
-      if (testBmi < 10) {
-        errors.push(`That gives a BMI of <strong>${testBmi.toFixed(1)}</strong> — are you sure? Weight seems very low for this height`);
-        badFields.push('weight');
-      } else if (testBmi > 70) {
-        errors.push(`That gives a BMI of <strong>${testBmi.toFixed(1)}</strong> — are you sure? Please double-check your values`);
-        badFields.push('height', 'weight');
-      }
-    }
-
-    if (errors.length > 0) {
-      showError(errors.join('<br>'), badFields);
-      const btn = document.querySelector('.btn-bmi');
-      btn.style.animation = 'none'; btn.offsetHeight;
-      btn.style.animation = 'shake 0.4s ease';
-      return;
-    }
-
-    profile.weight = w;
-    profile.height = h;
-    profile.age = a || 28;
-    profile.sex = s;
-
-    const bmi = w / ((h / 100) ** 2);
-    profile.bmi = bmi;
-
-    let category, color, factor;
-    if (bmi < 18.5)      { category = 'Underweight'; color = '#5dade2'; factor = 0.85; }
-    else if (bmi < 25)   { category = 'Normal';      color = '#48c9b0'; factor = 1.0;  }
-    else if (bmi < 30)   { category = 'Overweight';   color = '#f0856e'; factor = 1.12; }
-    else                 { category = 'Obese';        color = '#e74c3c'; factor = 1.25; }
-    profile.correctionFactor = factor;
-
-    // Populate strip
-    document.getElementById('stripWeight').textContent = w;
-    document.getElementById('stripHeight').textContent = h;
-    document.getElementById('stripBmiVal').textContent = bmi.toFixed(1);
-    document.getElementById('stripBmiVal').style.color = color;
-
-    const catEl = document.getElementById('stripBmiCat');
-    catEl.textContent = category;
-    catEl.style.background = color + '22';
-    catEl.style.color = color;
-
-    // Collapse form, show strip
-    document.getElementById('bmiCard').classList.add('collapsed');
-    document.getElementById('profileStrip').classList.add('visible');
-
-    // Recalc sessions with updated profile
-    sessions.forEach(s => { s.kcal = calcCalories(s.stroke, s.intensity, s.duration); });
-    updateUI();
-  }
-
-  function expandProfile() {
-    document.getElementById('bmiCard').classList.remove('collapsed');
-    document.getElementById('profileStrip').classList.remove('visible');
-    setTimeout(() => document.getElementById('height').focus(), 350);
   }
 
   // === CALORIES ===
@@ -702,7 +983,7 @@
   }
 
   // === UI ===
-  let historyOpen = true;
+  let historyOpen = false;
 
   function updateUI() {
     const totalKcal = sessions.reduce((s, x) => s + x.kcal, 0);
@@ -713,27 +994,22 @@
     const pct = Math.min(totalKcal / DAILY_GOAL_KCAL, 1);
     const circumference = 2 * Math.PI * 65;
     document.getElementById('ringFill').style.strokeDashoffset = circumference * (1 - pct);
-    document.getElementById('waterBg').style.height = (pct * 55) + '%';
 
     document.getElementById('totalDist').textContent = totalDist.toLocaleString();
     document.getElementById('totalTime').textContent = totalMin;
     document.getElementById('sessionCount').textContent = sessions.length;
     document.getElementById('kcalPerMin').textContent = totalMin > 0 ? (totalKcal / totalMin).toFixed(1) : '—';
 
-    // Session badge
     const badge = document.getElementById('sessionBadge');
     if (sessions.length > 0) {
-      badge.textContent = sessions.length;
-      badge.classList.add('visible');
+      badge.textContent = sessions.length; badge.classList.add('visible');
     } else {
       badge.classList.remove('visible');
     }
 
-    // Clear all button
     const clearBtn = document.getElementById('clearBtn');
     sessions.length > 0 ? clearBtn.classList.add('visible') : clearBtn.classList.remove('visible');
 
-    // Session list
     const list = document.getElementById('sessionList');
     if (sessions.length === 0) {
       list.innerHTML = '<div class="empty-state">No sessions yet — go make some waves!</div>';
@@ -775,13 +1051,9 @@
     const el = document.getElementById('session-' + index);
     if (el) {
       el.classList.add('removing');
-      setTimeout(() => {
-        sessions.splice(index, 1);
-        updateUI();
-      }, 350);
+      setTimeout(() => { sessions.splice(index, 1); updateUI(); }, 350);
     } else {
-      sessions.splice(index, 1);
-      updateUI();
+      sessions.splice(index, 1); updateUI();
     }
   }
 
@@ -799,17 +1071,16 @@
     updateUI();
   }
 
-  // === LOG ===
+  // === LOG SESSION ===
   function logSession() {
-    const distRaw = document.getElementById('distance').value;
-    const durRaw  = document.getElementById('duration').value;
+    const distRaw  = document.getElementById('distance').value;
+    const durRaw   = document.getElementById('duration').value;
     const distance = parseInt(distRaw) || 0;
-    const duration = parseInt(durRaw) || 0;
-    const stroke   = document.getElementById('stroke').value;
+    const duration = parseInt(durRaw)  || 0;
+    const stroke    = document.getElementById('stroke').value;
     const intensity = document.getElementById('intensity').value;
 
-    let errors = [];
-    let badFields = [];
+    let errors = [], badFields = [];
 
     if (!distRaw || distance <= 0) {
       errors.push('Enter a distance'); badFields.push('distance');
@@ -825,9 +1096,8 @@
       badFields.push('duration');
     }
 
-    // Pace sanity: if both are valid, check speed
     if (errors.length === 0 && distance > 0 && duration > 0) {
-      const paceMin100m = (duration / (distance / 100));
+      const paceMin100m = duration / (distance / 100);
       if (paceMin100m < 0.5) {
         errors.push(`That pace is <strong>${(paceMin100m * 60).toFixed(0)}s per 100m</strong> — faster than an Olympic sprinter! Double-check your values`);
         badFields.push('distance', 'duration');
@@ -844,22 +1114,22 @@
 
     const kcal = calcCalories(stroke, intensity, duration);
     sessions.push({ distance, duration, stroke, intensity, kcal, time: new Date() });
-
     document.getElementById('distance').value = '';
     document.getElementById('duration').value = '';
+    if (sessions.length === 1) {
+      historyOpen = true;
+      document.getElementById('sessionList').classList.remove('collapsed');
+      document.getElementById('toggleArrow').classList.remove('collapsed');
+    }
     updateUI();
   }
 
-  // Enter key
-  document.querySelectorAll('input[type="number"]').forEach(el => {
-    el.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        ['height','weight','age'].includes(el.id) ? calcBMI() : logSession();
-      }
+  // Enter key on log form fields
+  ['distance', 'duration'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => {
+      if (e.key === 'Enter') logSession();
     });
   });
-
-  updateUI();
 </script>
 </body>
 </html>
