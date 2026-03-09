@@ -240,15 +240,7 @@
     width: 1px; height: 16px; background: rgba(255,255,255,0.1);
   }
   .profile-strip .bmi-chip {
-    display: flex; align-items: center; gap: 6px;
-  }
-  .profile-strip .bmi-chip .bmi-num {
-    font-family: 'Playfair Display', serif;
-    font-weight: 700; font-size: 1rem;
-  }
-  .profile-strip .bmi-chip .bmi-cat {
-    font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
-    border-radius: 12px; letter-spacing: 0.5px;
+    display: flex; align-items: center; gap: 5px;
   }
   .profile-strip .edit-btn {
     background: none; border: 1px solid rgba(255,255,255,0.12);
@@ -294,17 +286,30 @@
   }
   .stat-card.highlight .val { color: var(--foam); }
 
-  /* === PROTEIN ALERT === */
-  .protein-alert {
-    background: linear-gradient(135deg, rgba(240,133,110,0.15), rgba(240,133,110,0.05));
-    border: 1px solid rgba(240,133,110,0.25); border-radius: 12px;
-    padding: 12px 16px; margin-bottom: 24px;
-    display: none; align-items: center; gap: 10px; animation: slideIn 0.5s ease;
+  /* === SESSION CONFIRM === */
+  .session-confirm {
+    background: linear-gradient(135deg, rgba(72,201,176,0.15), rgba(72,201,176,0.05));
+    border: 1px solid rgba(72,201,176,0.3); border-radius: 12px;
+    display: flex; align-items: center; gap: 10px; overflow: hidden;
+    max-height: 0; opacity: 0; padding: 0 16px; margin-bottom: 0;
+    /* exit: fade out first, then collapse space */
+    transition: opacity 0.35s ease,
+                max-height 0.5s ease 0.28s,
+                padding 0.45s ease 0.22s,
+                margin-bottom 0.5s ease 0.22s;
   }
-  .protein-alert.visible { display: flex; }
-  .protein-alert .icon { font-size: 1.3rem; }
-  .protein-alert .text { font-size: 0.82rem; color: var(--coral); line-height: 1.4; }
-  .protein-alert .text strong { color: var(--sand); }
+  .session-confirm.visible {
+    max-height: 80px; opacity: 1; padding: 12px 16px; margin-bottom: 24px;
+    /* enter: everything together */
+    transition: opacity 0.4s ease, max-height 0.4s ease,
+                padding 0.4s ease, margin-bottom 0.4s ease;
+  }
+  .session-confirm .confirm-icon {
+    font-size: 1.1rem; font-weight: 700; color: var(--foam); flex-shrink: 0;
+  }
+  .session-confirm .confirm-text {
+    font-size: 0.82rem; color: var(--glow); line-height: 1.4;
+  }
 
   /* === LOG FORM === */
   .form-card {
@@ -589,9 +594,8 @@
       <div class="divider"></div>
       <div class="chip"><span class="chip-val" id="stripHeight">—</span> cm</div>
       <div class="divider"></div>
-      <div class="bmi-chip">
-        <span class="bmi-num" id="stripBmiVal">—</span>
-        <span class="bmi-cat" id="stripBmiCat">—</span>
+      <div class="chip bmi-chip">
+        <span class="chip-val" id="stripBmiVal">—</span> BMI
       </div>
       <button class="edit-btn" onclick="goToOnboarding()">Edit</button>
     </div>
@@ -636,12 +640,10 @@
       </div>
     </div>
 
-    <!-- Protein Window -->
-    <div class="protein-alert" id="proteinAlert">
-      <div class="icon">🥤</div>
-      <div class="text">
-        <strong>Protein window!</strong> Great swim — consider having <strong>25-30g protein</strong> within the next 30-60 min for optimal recovery.
-      </div>
+    <!-- Session Confirm -->
+    <div class="session-confirm" id="sessionConfirm">
+      <div class="confirm-icon">✓</div>
+      <div class="confirm-text">Session logged! Check your history below.</div>
     </div>
 
     <!-- Log Form -->
@@ -727,15 +729,15 @@
 
 <script>
   const MET = {
-    freestyle:    { easy: 6.0, moderate: 8.3, hard: 10.0 },
-    breaststroke: { easy: 5.3, moderate: 7.4, hard: 10.3 },
-    backstroke:   { easy: 4.8, moderate: 7.0, hard: 9.5 },
+    freestyle:    { easy: 5.8, moderate: 7.0, hard: 10.0 },
+    breaststroke: { easy: 5.3, moderate: 6.5, hard: 10.3 },
+    backstroke:   { easy: 4.8, moderate: 6.0, hard:  9.5 },
     butterfly:    { easy: 8.0, moderate: 10.0, hard: 13.8 },
-    mixed:        { easy: 6.0, moderate: 8.0, hard: 10.0 }
+    mixed:        { easy: 5.5, moderate: 7.0, hard:  9.5 }
   };
 
   const DAILY_GOAL_KCAL = 500;
-  let profile = { weight: null, height: null, age: null, sex: 'male', bmi: null, correctionFactor: 1.0 };
+  let profile = { weight: null, height: null, age: null, sex: 'male', bmi: null };
   let sessions = [];
   let selectedSex = 'male';
 
@@ -893,22 +895,11 @@
     const bmi = w / ((h / 100) ** 2);
     profile.bmi = bmi;
 
-    let category, color, factor;
-    if      (bmi < 18.5) { category = 'Underweight'; color = '#5dade2'; factor = 0.85; }
-    else if (bmi < 25)   { category = 'Normal';      color = '#48c9b0'; factor = 1.0;  }
-    else if (bmi < 30)   { category = 'Overweight';  color = '#f0856e'; factor = 1.12; }
-    else                 { category = 'Obese';        color = '#e74c3c'; factor = 1.25; }
-    profile.correctionFactor = factor;
 
     // Populate profile strip
     document.getElementById('stripWeight').textContent = w;
     document.getElementById('stripHeight').textContent = h;
     document.getElementById('stripBmiVal').textContent = bmi.toFixed(1);
-    document.getElementById('stripBmiVal').style.color = color;
-    const catEl = document.getElementById('stripBmiCat');
-    catEl.textContent = category;
-    catEl.style.background = color + '22';
-    catEl.style.color = color;
 
     // Recalc any existing sessions
     sessions.forEach(s => { s.kcal = calcCalories(s.stroke, s.intensity, s.duration); });
@@ -948,6 +939,26 @@
 
   // === ERROR TOAST ===
   let toastTimer = null;
+  function smoothScrollTo(el, duration) {
+    const start = window.pageYOffset;
+    const target = el.getBoundingClientRect().top + start;
+    const t0 = performance.now();
+    (function step(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      const ease = p < 0.5 ? 2*p*p : -1+(4-2*p)*p;
+      window.scrollTo(0, start + (target - start) * ease);
+      if (p < 1) requestAnimationFrame(step);
+    })(t0);
+  }
+
+  let confirmTimer = null;
+  function showSessionConfirm() {
+    const el = document.getElementById('sessionConfirm');
+    el.classList.add('visible');
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => el.classList.remove('visible'), 4000);
+  }
+
   function showError(msg, fieldIds) {
     document.querySelectorAll('.error-toast').forEach(el => el.remove());
     document.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
@@ -979,7 +990,7 @@
   // === CALORIES ===
   function calcCalories(stroke, intensity, durationMin) {
     const met = MET[stroke]?.[intensity] || 8;
-    return Math.round(met * profile.weight * (durationMin / 60) * profile.correctionFactor);
+    return Math.round(met * profile.weight * (durationMin / 60));
   }
 
   // === UI ===
@@ -1032,11 +1043,6 @@
       }).reverse().join('');
     }
 
-    if (sessions.length > 0) {
-      document.getElementById('proteinAlert').classList.add('visible');
-    } else {
-      document.getElementById('proteinAlert').classList.remove('visible');
-    }
   }
 
   // === TOGGLE HISTORY ===
@@ -1116,12 +1122,14 @@
     sessions.push({ distance, duration, stroke, intensity, kcal, time: new Date() });
     document.getElementById('distance').value = '';
     document.getElementById('duration').value = '';
-    if (sessions.length === 1) {
+    if (!historyOpen) {
       historyOpen = true;
       document.getElementById('sessionList').classList.remove('collapsed');
       document.getElementById('toggleArrow').classList.remove('collapsed');
     }
+    showSessionConfirm();
     updateUI();
+    setTimeout(() => smoothScrollTo(document.getElementById('historyHeader'), 800), 100);
   }
 
   // Enter key on log form fields
