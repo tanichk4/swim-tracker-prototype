@@ -13,9 +13,10 @@ import type { Profile, Session } from '@/lib/types'
 interface Props {
   initialProfile: Profile
   initialSessions: Session[]
+  email: string
 }
 
-export default function TrackerScreen({ initialProfile, initialSessions }: Props) {
+export default function TrackerScreen({ initialProfile, initialSessions, email }: Props) {
   const [sessions, setSessions] = useState<Session[]>(initialSessions)
   const [lastLoggedAt, setLastLoggedAt] = useState<number | null>(null)
 
@@ -71,7 +72,7 @@ export default function TrackerScreen({ initialProfile, initialSessions }: Props
         <p>Track · Burn · Recover</p>
       </header>
 
-      <ProfileStrip profile={initialProfile} />
+      <ProfileStrip profile={initialProfile} email={email} />
 
       <GoalRing totalKcal={totalKcal} />
 

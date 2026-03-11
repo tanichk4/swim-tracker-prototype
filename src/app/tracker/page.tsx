@@ -34,6 +34,7 @@ export default async function TrackerPage() {
     <TrackerScreen
       initialProfile={profile as Profile}
       initialSessions={(sessions ?? []) as Session[]}
+      email={user.email ?? ''}
     />
   )
 }
