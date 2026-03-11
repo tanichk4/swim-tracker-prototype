@@ -8,6 +8,7 @@ import StatsGrid from './StatsGrid'
 import SessionConfirm from './SessionConfirm'
 import SessionForm from './SessionForm'
 import SessionList from './SessionList'
+import BubbleField from './BubbleField'
 import type { Profile, Session } from '@/lib/types'
 
 interface Props {
@@ -67,6 +68,8 @@ export default function TrackerScreen({ initialProfile, initialSessions, email }
 
   return (
     <div id="screenTracker" className="screen active">
+      <BubbleField active={sessions.length > 0} />
+
       <header>
         <h1>SwimPulse</h1>
         <p>Track · Burn · Recover</p>

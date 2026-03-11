@@ -523,3 +523,41 @@ input[type=number] { -moz-appearance: textfield; appearance: textfield; }
   60% { transform: translateX(-4px); }
   80% { transform: translateX(4px); }
 }
+
+/* === BUBBLE FIELD === */
+.bubble-field {
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+.bubble-field--active { opacity: 1; }
+
+.bubble {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  animation: bubbleFloat linear infinite;
+  opacity: 0;
+}
+.bubble--coral { border-color: rgba(240, 133, 110, 0.35); }
+.bubble--foam  { border-color: rgba(72, 201, 176, 0.30); }
+
+.bubble__inner {
+  position: absolute;
+  width: 18%; height: 18%;
+  top: 22%; left: 25%;
+  border-radius: 50%;
+  opacity: 0.4;
+}
+.bubble--coral .bubble__inner { background: rgba(240, 133, 110, 0.5); }
+.bubble--foam  .bubble__inner { background: rgba(72, 201, 176, 0.45); }
+
+@keyframes bubbleFloat {
+  0%   { transform: translateY(0) translateX(0);        opacity: 0;   }
+  10%  { opacity: 0.9; }
+  50%  { transform: translateY(-45vh) translateX(18px); opacity: 0.6; }
+  80%  { opacity: 0.4; }
+  100% { transform: translateY(-100vh) translateX(-12px); opacity: 0; }
+}
