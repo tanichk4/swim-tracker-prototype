@@ -77,7 +77,7 @@ export default function TrackerScreen({ initialProfile, initialSessions, email }
 
       <ProfileStrip profile={initialProfile} email={email} />
 
-      <GoalRing totalKcal={totalKcal} />
+      <GoalRing totalKcal={totalKcal} goal={initialProfile.daily_goal} />
 
       <StatsGrid
         totalDist={totalDist}

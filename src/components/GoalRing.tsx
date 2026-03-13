@@ -1,12 +1,11 @@
-import { DAILY_GOAL_KCAL } from '@/lib/constants'
-
 interface Props {
   totalKcal: number
+  goal: number
 }
 
-export default function GoalRing({ totalKcal }: Props) {
+export default function GoalRing({ totalKcal, goal }: Props) {
   const circumference = 2 * Math.PI * 65
-  const pct = Math.min(totalKcal / DAILY_GOAL_KCAL, 1)
+  const pct = Math.min(totalKcal / goal, 1)
   const strokeDashoffset = circumference * (1 - pct)
 
   return (

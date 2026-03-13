@@ -5,6 +5,7 @@ export interface Profile {
   age: number
   sex: 'male' | 'female'
   bmi: number
+  daily_goal: number
 }
 
 export type Stroke = 'freestyle' | 'breaststroke' | 'backstroke' | 'butterfly' | 'mixed'

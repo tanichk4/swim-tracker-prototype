@@ -16,6 +16,7 @@ export default function OnboardingScreen({ initialProfile }: Props) {
   const [weight, setWeight] = useState(initialProfile?.weight?.toString() ?? '')
   const [age, setAge] = useState(initialProfile?.age?.toString() ?? '')
   const [sex, setSex] = useState<'male' | 'female'>(initialProfile?.sex ?? 'male')
+  const [goal, setGoal] = useState((initialProfile?.daily_goal ?? 500).toString())
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [fieldWarnings, setFieldWarnings] = useState<Record<string, string>>({})
   const [toastMsg, setToastMsg] = useState<string | null>(null)
@@ -26,7 +27,8 @@ export default function OnboardingScreen({ initialProfile }: Props) {
   const locked = !(
     height && parseFloat(height) > 0 &&
     weight && parseFloat(weight) > 0 &&
-    age && parseFloat(age) > 0
+    age && parseFloat(age) > 0 &&
+    goal && parseFloat(goal) > 0
   )
 
   const isEditMode = !!initialProfile
@@ -34,7 +36,8 @@ export default function OnboardingScreen({ initialProfile }: Props) {
     height !== (initialProfile!.height?.toString() ?? '') ||
     weight !== (initialProfile!.weight?.toString() ?? '') ||
     age    !== (initialProfile!.age?.toString()    ?? '') ||
-    sex    !== (initialProfile!.sex ?? 'male')
+    sex    !== (initialProfile!.sex ?? 'male') ||
+    goal   !== (initialProfile!.daily_goal ?? 500).toString()
   )
   const showClose = isEditMode && !isDirty
   const btnLabel = !isEditMode ? 'Continue →' : isDirty ? 'Save Changes' : 'Close'
@@ -100,6 +103,7 @@ export default function OnboardingScreen({ initialProfile }: Props) {
       if (!height || parseFloat(height) <= 0) errors.height = 'Height is required'
       if (!weight || parseFloat(weight) <= 0) errors.weight = 'Weight is required'
       if (!age || parseFloat(age) <= 0) errors.age = 'Age is required'
+      if (!goal || parseFloat(goal) <= 0) errors.goal = 'Daily goal is required'
       setFieldErrors(errors)
       setTimeout(() => setFieldErrors({}), 2000)
       return
@@ -108,6 +112,7 @@ export default function OnboardingScreen({ initialProfile }: Props) {
     const h = parseFloat(height)
     const w = parseFloat(weight)
     const a = parseInt(age)
+    const g = parseInt(goal)
 
     const errors: Record<string, string> = {}
     const toastErrors: string[] = []
@@ -136,6 +141,14 @@ export default function OnboardingScreen({ initialProfile }: Props) {
       toastErrors.push(`<strong>${a} years</strong> doesn't seem right — expected 1–120`)
     }
 
+    if (isNaN(g)) {
+      errors.goal = 'Daily goal is required'
+      toastErrors.push('Please enter your daily calorie goal')
+    } else if (g < 50 || g > 5000) {
+      errors.goal = 'Must be 50–5000 kcal'
+      toastErrors.push(`<strong>${g} kcal</strong> doesn't look right — expected 50–5000 kcal`)
+    }
+
     if (toastErrors.length > 0) {
       setFieldErrors(errors)
       setToastMsg(toastErrors.join('<br>'))
@@ -159,6 +172,7 @@ export default function OnboardingScreen({ initialProfile }: Props) {
       age: a,
       sex,
       bmi: parseFloat(bmi.toFixed(2)),
+      daily_goal: g,
     })
 
     if (error) {
@@ -170,10 +184,10 @@ export default function OnboardingScreen({ initialProfile }: Props) {
     router.push('/tracker')
   }
 
-  function stepInput(field: 'height' | 'weight' | 'age', delta: number) {
-    const stepSizes = { height: 1, weight: 0.5, age: 1 }
-    const setter = { height: setHeight, weight: setWeight, age: setAge }[field]
-    const current = parseFloat({ height, weight, age }[field]) || 0
+  function stepInput(field: 'height' | 'weight' | 'age' | 'goal', delta: number) {
+    const stepSizes = { height: 1, weight: 0.5, age: 1, goal: 50 }
+    const setter = { height: setHeight, weight: setWeight, age: setAge, goal: setGoal }[field]
+    const current = parseFloat({ height, weight, age, goal }[field]) || 0
     setter(String(Math.max(0, current + delta * stepSizes[field])))
   }
 
@@ -295,6 +309,35 @@ export default function OnboardingScreen({ initialProfile }: Props) {
               </div>
               <div className={`field-warn${fieldWarnings.age ? ' visible' : ''}`}>
                 {fieldWarnings.age ? `⚠ ${fieldWarnings.age}` : ''}
+              </div>
+            </div>
+
+            {/* Daily Goal */}
+            <div className="onboarding-field">
+              <label htmlFor="goal">Daily Goal (kcal)</label>
+              <div className="num-input-wrap">
+                <input
+                  id="goal"
+                  type="number"
+                  placeholder="e.g. 500"
+                  min="50"
+                  max="5000"
+                  step="50"
+                  value={goal}
+                  className={fieldErrors.goal ? 'input-error' : ''}
+                  onChange={(e) => {
+                    setGoal(e.target.value)
+                    setFieldErrors((p) => ({ ...p, goal: '' }))
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                />
+                <div className="num-steppers">
+                  <button type="button" tabIndex={-1} onClick={() => stepInput('goal', 1)}>▲</button>
+                  <button type="button" tabIndex={-1} onClick={() => stepInput('goal', -1)}>▼</button>
+                </div>
+              </div>
+              <div className={`field-error${fieldErrors.goal ? ' visible' : ''}`}>
+                {fieldErrors.goal}
               </div>
             </div>
 
