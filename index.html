@@ -4,242 +4,383 @@
      1. Screen 1 — Enter height/weight/age/sex → Continue button unlocks when all filled
      2. Inline warnings appear for age-based or BMI sanity issues (non-blocking)
      3. Screen 2 — Full tracker; Edit button on profile strip returns to Screen 1 -->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SwimPulse — Workout & Nutrition Tracker</title>
-<link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <!-- ============ SCREEN 1: ONBOARDING ============ -->
-  <div id="screenOnboarding" class="screen active">
-    <div class="onboarding-card">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SwimPulse</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <!-- ============ SCREEN 1: ONBOARDING ============ -->
+    <div id="screenOnboarding" class="screen active">
+      <div class="onboarding-card">
+        <div class="onboarding-logo">
+          <h1>SwimPulse</h1>
+          <p>Track · Burn · Recover</p>
+        </div>
 
-      <div class="onboarding-logo">
+        <div class="onboarding-why">
+          <p>
+            Your height, weight, and age let us calculate accurate calorie burn
+            for every swim — no guesswork.
+          </p>
+        </div>
+
+        <div class="onboarding-heading">Your Body Profile</div>
+
+        <div class="onboarding-fields">
+          <div class="onboarding-field">
+            <label for="height">Height (cm)</label>
+            <div class="num-input-wrap">
+              <input
+                type="number"
+                id="height"
+                placeholder="e.g. 170"
+                min="50"
+                max="250"
+                step="1"
+                oninput="
+                  this.classList.remove('input-error');
+                  setFieldError(this.id, '');
+                  setWarn('warn-height', '');
+                  setWarn('warn-bmi', '');
+                  checkContinueEnabled();
+                "
+                onblur="checkWarnings()"
+                onkeydown="if (event.key === 'Enter') submitProfile();"
+              />
+              <div class="num-steppers">
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('height', 1)"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('height', -1)"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+            <div class="field-error" id="err-height"></div>
+            <div class="field-warn" id="warn-height"></div>
+          </div>
+
+          <div class="onboarding-field">
+            <label for="weight">Weight (kg)</label>
+            <div class="num-input-wrap">
+              <input
+                type="number"
+                id="weight"
+                placeholder="e.g. 65"
+                min="10"
+                max="300"
+                step="0.5"
+                oninput="
+                  this.classList.remove('input-error');
+                  setFieldError(this.id, '');
+                  setWarn('warn-weight', '');
+                  setWarn('warn-bmi', '');
+                  checkContinueEnabled();
+                "
+                onblur="checkWarnings()"
+                onkeydown="if (event.key === 'Enter') submitProfile();"
+              />
+              <div class="num-steppers">
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('weight', 1)"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('weight', -1)"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+            <div class="field-error" id="err-weight"></div>
+            <div class="field-warn" id="warn-weight"></div>
+          </div>
+
+          <div class="onboarding-field">
+            <label for="age">Age</label>
+            <div class="num-input-wrap">
+              <input
+                type="number"
+                id="age"
+                placeholder="e.g. 28"
+                min="1"
+                max="120"
+                step="1"
+                oninput="
+                  this.classList.remove('input-error');
+                  setFieldError(this.id, '');
+                  setWarn('warn-age', '');
+                  checkContinueEnabled();
+                "
+                onblur="checkWarnings()"
+                onkeydown="if (event.key === 'Enter') submitProfile();"
+              />
+              <div class="num-steppers">
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('age', 1)"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('age', -1)"
+                >
+                  ▼
+                </button>
+              </div>
+            </div>
+            <div class="field-error" id="err-age"></div>
+            <div class="field-warn" id="warn-age"></div>
+          </div>
+
+          <div class="onboarding-field">
+            <label>Sex</label>
+            <div class="sex-toggle">
+              <button
+                data-val="male"
+                class="selected"
+                onclick="selectSex('male')"
+              >
+                Male
+              </button>
+              <button data-val="female" onclick="selectSex('female')">
+                Female
+              </button>
+            </div>
+            <div class="field-warn" id="warn-bmi"></div>
+          </div>
+        </div>
+
+        <button
+          class="btn-continue btn-continue--locked"
+          id="btnContinue"
+          onclick="submitProfile()"
+        >
+          Continue →
+        </button>
+      </div>
+    </div>
+
+    <!-- ============ SCREEN 2: TRACKER ============ -->
+    <div id="screenTracker" class="screen">
+      <header>
         <h1>SwimPulse</h1>
         <p>Track · Burn · Recover</p>
+      </header>
+
+      <!-- Profile strip -->
+      <div class="profile-strip" id="profileStrip">
+        <div class="chip">
+          <span class="chip-val" id="stripWeight">—</span> kg
+        </div>
+        <div class="divider"></div>
+        <div class="chip">
+          <span class="chip-val" id="stripHeight">—</span> cm
+        </div>
+        <div class="divider"></div>
+        <div class="chip bmi-chip">
+          <span class="chip-val" id="stripBmiVal">—</span> BMI
+        </div>
+        <button class="edit-btn" onclick="goToOnboarding()">Edit</button>
       </div>
 
-      <div class="onboarding-why">
-        <p>Your height, weight, and age let us calculate accurate calorie burn for every swim — no guesswork.</p>
+      <!-- Goal Ring -->
+      <div class="goal-ring">
+        <div class="ring-container">
+          <svg viewBox="0 0 140 140">
+            <defs>
+              <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#48c9b0" />
+                <stop offset="100%" stop-color="#f0856e" />
+              </linearGradient>
+            </defs>
+            <circle class="ring-bg" cx="70" cy="70" r="65" />
+            <circle class="ring-fill" id="ringFill" cx="70" cy="70" r="65" />
+          </svg>
+          <div class="ring-center">
+            <div class="number" id="goalNumber">0</div>
+            <div class="label">kcal today</div>
+          </div>
+        </div>
       </div>
 
-      <div class="onboarding-heading">Your Body Profile</div>
+      <!-- Stats -->
+      <div class="stats">
+        <div class="stat-card">
+          <div class="val" id="totalDist">0</div>
+          <div class="lbl">Meters</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="totalTime">0</div>
+          <div class="lbl">Minutes</div>
+        </div>
+        <div class="stat-card">
+          <div class="val" id="sessionCount">0</div>
+          <div class="lbl">Sessions</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="val" id="kcalPerMin">—</div>
+          <div class="lbl">kcal/min</div>
+        </div>
+      </div>
 
-      <div class="onboarding-fields">
+      <!-- Session Confirm -->
+      <div class="session-confirm" id="sessionConfirm">
+        <div class="confirm-icon">✓</div>
+        <div class="confirm-text">
+          Session logged! Check your history below.
+        </div>
+      </div>
 
-        <div class="onboarding-field">
-          <label for="height">Height (cm)</label>
-          <div class="num-input-wrap">
-            <input type="number" id="height" placeholder="e.g. 170" min="50" max="250" step="1"
-                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-height',''); setWarn('warn-bmi',''); checkContinueEnabled()"
-                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
-            <div class="num-steppers">
-              <button type="button" tabindex="-1" onclick="stepInput('height', 1)">▲</button>
-              <button type="button" tabindex="-1" onclick="stepInput('height', -1)">▼</button>
+      <!-- Log Form -->
+      <div class="form-card">
+        <h2>Log a Session</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Distance (m)</label>
+            <div class="num-input-wrap">
+              <input
+                type="number"
+                id="distance"
+                placeholder="e.g. 1500"
+                min="0"
+                step="50"
+              />
+              <div class="num-steppers">
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('distance', 1)"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('distance', -1)"
+                >
+                  ▼
+                </button>
+              </div>
             </div>
           </div>
-          <div class="field-error" id="err-height"></div>
-          <div class="field-warn"  id="warn-height"></div>
-        </div>
-
-        <div class="onboarding-field">
-          <label for="weight">Weight (kg)</label>
-          <div class="num-input-wrap">
-            <input type="number" id="weight" placeholder="e.g. 65" min="10" max="300" step="0.5"
-                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-weight',''); setWarn('warn-bmi',''); checkContinueEnabled()"
-                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
-            <div class="num-steppers">
-              <button type="button" tabindex="-1" onclick="stepInput('weight', 1)">▲</button>
-              <button type="button" tabindex="-1" onclick="stepInput('weight', -1)">▼</button>
-            </div>
-          </div>
-          <div class="field-error" id="err-weight"></div>
-          <div class="field-warn"  id="warn-weight"></div>
-        </div>
-
-        <div class="onboarding-field">
-          <label for="age">Age</label>
-          <div class="num-input-wrap">
-            <input type="number" id="age" placeholder="e.g. 28" min="1" max="120" step="1"
-                   oninput="this.classList.remove('input-error'); setFieldError(this.id, ''); setWarn('warn-age',''); checkContinueEnabled()"
-                   onblur="checkWarnings()" onkeydown="if(event.key==='Enter')submitProfile()">
-            <div class="num-steppers">
-              <button type="button" tabindex="-1" onclick="stepInput('age', 1)">▲</button>
-              <button type="button" tabindex="-1" onclick="stepInput('age', -1)">▼</button>
-            </div>
-          </div>
-          <div class="field-error" id="err-age"></div>
-          <div class="field-warn"  id="warn-age"></div>
-        </div>
-
-        <div class="onboarding-field">
-          <label>Sex</label>
-          <div class="sex-toggle">
-            <button data-val="male" class="selected" onclick="selectSex('male')">Male</button>
-            <button data-val="female"               onclick="selectSex('female')">Female</button>
-          </div>
-          <div class="field-warn" id="warn-bmi"></div>
-        </div>
-
-      </div>
-
-      <button class="btn-continue btn-continue--locked" id="btnContinue" onclick="submitProfile()">
-        Continue →
-      </button>
-
-    </div>
-  </div>
-
-  <!-- ============ SCREEN 2: TRACKER ============ -->
-  <div id="screenTracker" class="screen">
-
-    <header>
-      <h1>SwimPulse</h1>
-      <p>Track · Burn · Recover</p>
-    </header>
-
-    <!-- Profile strip -->
-    <div class="profile-strip" id="profileStrip">
-      <div class="chip"><span class="chip-val" id="stripWeight">—</span> kg</div>
-      <div class="divider"></div>
-      <div class="chip"><span class="chip-val" id="stripHeight">—</span> cm</div>
-      <div class="divider"></div>
-      <div class="chip bmi-chip">
-        <span class="chip-val" id="stripBmiVal">—</span> BMI
-      </div>
-      <button class="edit-btn" onclick="goToOnboarding()">Edit</button>
-    </div>
-
-    <!-- Goal Ring -->
-    <div class="goal-ring">
-      <div class="ring-container">
-        <svg viewBox="0 0 140 140">
-          <defs>
-            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#48c9b0"/>
-              <stop offset="100%" stop-color="#f0856e"/>
-            </linearGradient>
-          </defs>
-          <circle class="ring-bg" cx="70" cy="70" r="65"/>
-          <circle class="ring-fill" id="ringFill" cx="70" cy="70" r="65"/>
-        </svg>
-        <div class="ring-center">
-          <div class="number" id="goalNumber">0</div>
-          <div class="label">kcal today</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Stats -->
-    <div class="stats">
-      <div class="stat-card">
-        <div class="val" id="totalDist">0</div>
-        <div class="lbl">Meters</div>
-      </div>
-      <div class="stat-card">
-        <div class="val" id="totalTime">0</div>
-        <div class="lbl">Minutes</div>
-      </div>
-      <div class="stat-card">
-        <div class="val" id="sessionCount">0</div>
-        <div class="lbl">Sessions</div>
-      </div>
-      <div class="stat-card highlight">
-        <div class="val" id="kcalPerMin">—</div>
-        <div class="lbl">kcal/min</div>
-      </div>
-    </div>
-
-    <!-- Session Confirm -->
-    <div class="session-confirm" id="sessionConfirm">
-      <div class="confirm-icon">✓</div>
-      <div class="confirm-text">Session logged! Check your history below.</div>
-    </div>
-
-    <!-- Log Form -->
-    <div class="form-card">
-      <h2>Log a Session</h2>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Distance (m)</label>
-          <div class="num-input-wrap">
-            <input type="number" id="distance" placeholder="e.g. 1500" min="0" step="50">
-            <div class="num-steppers">
-              <button type="button" tabindex="-1" onclick="stepInput('distance', 1)">▲</button>
-              <button type="button" tabindex="-1" onclick="stepInput('distance', -1)">▼</button>
+          <div class="form-group">
+            <label>Duration (min)</label>
+            <div class="num-input-wrap">
+              <input
+                type="number"
+                id="duration"
+                placeholder="e.g. 45"
+                min="0"
+                step="1"
+              />
+              <div class="num-steppers">
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('duration', 1)"
+                >
+                  ▲
+                </button>
+                <button
+                  type="button"
+                  tabindex="-1"
+                  onclick="stepInput('duration', -1)"
+                >
+                  ▼
+                </button>
+              </div>
             </div>
           </div>
         </div>
-        <div class="form-group">
-          <label>Duration (min)</label>
-          <div class="num-input-wrap">
-            <input type="number" id="duration" placeholder="e.g. 45" min="0" step="1">
-            <div class="num-steppers">
-              <button type="button" tabindex="-1" onclick="stepInput('duration', 1)">▲</button>
-              <button type="button" tabindex="-1" onclick="stepInput('duration', -1)">▼</button>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Stroke</label>
+            <div class="select-wrap">
+              <select id="stroke">
+                <option value="freestyle">Freestyle</option>
+                <option value="breaststroke">Breaststroke</option>
+                <option value="backstroke">Backstroke</option>
+                <option value="butterfly">Butterfly</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Intensity</label>
+            <div class="select-wrap">
+              <select id="intensity">
+                <option value="easy">Easy</option>
+                <option value="moderate" selected>Moderate</option>
+                <option value="hard">Hard</option>
+              </select>
             </div>
           </div>
         </div>
+        <button class="btn-log" onclick="logSession()">Log Swim 🏊‍♀️</button>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Stroke</label>
-          <div class="select-wrap">
-            <select id="stroke">
-              <option value="freestyle">Freestyle</option>
-              <option value="breaststroke">Breaststroke</option>
-              <option value="backstroke">Backstroke</option>
-              <option value="butterfly">Butterfly</option>
-              <option value="mixed">Mixed</option>
-            </select>
+
+      <!-- History -->
+      <div class="history">
+        <div class="history-header" id="historyHeader">
+          <h2>
+            Today's Sessions
+            <span class="session-badge" id="sessionBadge"></span>
+          </h2>
+          <div class="history-actions">
+            <button
+              class="clear-btn"
+              id="clearBtn"
+              onclick="clearAll()"
+              title="Clear all"
+            >
+              Clear all
+            </button>
+            <button class="toggle-btn" id="toggleBtn" onclick="toggleHistory()">
+              <span class="arrow collapsed" id="toggleArrow">▾</span>
+            </button>
           </div>
         </div>
-        <div class="form-group">
-          <label>Intensity</label>
-          <div class="select-wrap">
-            <select id="intensity">
-              <option value="easy">Easy</option>
-              <option value="moderate" selected>Moderate</option>
-              <option value="hard">Hard</option>
-            </select>
+        <div class="session-list collapsed" id="sessionList">
+          <div class="empty-state">No sessions yet — go make some waves!</div>
+        </div>
+      </div>
+
+      <!-- Confirm Clear Dialog -->
+      <div class="confirm-overlay" id="confirmOverlay">
+        <div class="confirm-box">
+          <p>Remove all sessions?<br />This can't be undone.</p>
+          <div class="confirm-actions">
+            <button class="btn-cancel" onclick="cancelClear()">Cancel</button>
+            <button class="btn-confirm-del" onclick="confirmClear()">
+              Clear all
+            </button>
           </div>
         </div>
       </div>
-      <button class="btn-log" onclick="logSession()">Log Swim 🏊‍♀️</button>
     </div>
+    <!-- /screenTracker -->
 
-    <!-- History -->
-    <div class="history">
-      <div class="history-header" id="historyHeader">
-        <h2>Today's Sessions <span class="session-badge" id="sessionBadge"></span></h2>
-        <div class="history-actions">
-          <button class="clear-btn" id="clearBtn" onclick="clearAll()" title="Clear all">Clear all</button>
-          <button class="toggle-btn" id="toggleBtn" onclick="toggleHistory()">
-            <span class="arrow collapsed" id="toggleArrow">▾</span>
-          </button>
-        </div>
-      </div>
-      <div class="session-list collapsed" id="sessionList">
-        <div class="empty-state">No sessions yet — go make some waves!</div>
-      </div>
-    </div>
-
-    <!-- Confirm Clear Dialog -->
-    <div class="confirm-overlay" id="confirmOverlay">
-      <div class="confirm-box">
-        <p>Remove all sessions?<br>This can't be undone.</p>
-        <div class="confirm-actions">
-          <button class="btn-cancel" onclick="cancelClear()">Cancel</button>
-          <button class="btn-confirm-del" onclick="confirmClear()">Clear all</button>
-        </div>
-      </div>
-    </div>
-
-  </div><!-- /screenTracker -->
-
-<script src="script.js"></script>
-</body>
+    <script src="script.js"></script>
+  </body>
 </html>

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import type { Profile } from '@/lib/types'
+import ThemeToggle from './ThemeToggle'
 
 interface Props {
   profile: Profile
@@ -37,6 +38,7 @@ export default function ProfileStrip({ profile, email }: Props) {
             Sign Out
           </button>
         )}
+        <ThemeToggle />
       </div>
       <div className="profile-chips">
         <div className="chip">

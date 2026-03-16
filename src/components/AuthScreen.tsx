@@ -11,7 +11,7 @@ const footerStyle: React.CSSProperties = {
   textAlign: "center",
   marginTop: "20px",
   fontSize: "0.8rem",
-  color: "rgba(255,255,255,0.4)",
+  color: "var(--t-3)",
 };
 const linkStyle: React.CSSProperties = {
   background: "none",
