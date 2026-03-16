@@ -14,8 +14,8 @@ export default function GoalRing({ totalKcal, goal }: Props) {
         <svg viewBox="0 0 140 140">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#48c9b0" />
-              <stop offset="100%" stopColor="#f0856e" />
+              <stop offset="0%" stopColor="#C6F135" />
+              <stop offset="100%" stopColor="#D4ED52" />
             </linearGradient>
           </defs>
           <circle className="ring-bg" cx="70" cy="70" r="65" />
